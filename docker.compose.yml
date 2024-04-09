@@ -1,7 +1,10 @@
+# Shoud be create docker-compose file in production server
 version: '3'
 services:
   react:
-    build: islamkamel/deployment-example
+    # by default deployment lab used repository tag for push image
+    # <username>/<image name>:<tag>
+    image: islamkamel/deployment-example:latest
     ports:
       - "3000:3000"
     stdin_open: true

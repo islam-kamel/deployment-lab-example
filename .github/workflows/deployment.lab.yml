@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Post to a Slack channel
         id: slack
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v1.25.0
         with:
           # The following message update step does not accept a channel name.
           # Setting a channel ID here for consistency is highly recommended.
@@ -69,7 +69,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - uses: slackapi/slack-github-action@v1.24.0
+      - uses: slackapi/slack-github-action@v1.25.0
         with:
           # Unlike the step posting a new message, this step does not accept a channel name.
           # Please use a channel ID, not a name here.

@@ -1,0 +1,3 @@
+.gitignore/workflows/__test__*.yml
+
+__test__/

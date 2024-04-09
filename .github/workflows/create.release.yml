@@ -1,0 +1,63 @@
+# This is a GitHub Actions workflow for creating a new release.
+name: Create Release
+
+# This workflow is triggered when a new tag is pushed.
+on:
+  push:
+    tags:
+      - '*'
+jobs:
+  build:
+    # This job creates a new release.
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      # This step checks out the repository code.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # This step sets the TAG_NAME environment variable to the name of the latest git tag.
+      - name: Set TAG_NAME
+        run: echo "TAG_NAME=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_ENV
+
+      # This step creates a new release using the softprops/action-gh-release action.
+      # The new release is created with the name and tag name set to the value of the TAG_NAME environment variable.
+      # The release is not a draft or a pre-release.
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: Release ${{ env.TAG_NAME }}
+          draft: false
+          prerelease: false
+
+
+  push_notification:
+    # This job pushes a Docker image to Docker Hub.
+    name: Push Notification to Slack
+    runs-on: ubuntu-latest
+    needs: [ build ]
+    steps:
+      # This step checks out the repository code.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # This step sets the TAG_NAME environment variable to the name of the latest git tag.
+      - name: Set TAG_NAME
+        run: echo "TAG_NAME=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_ENV
+
+      - name: Post to a Slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          # Slack channel id, channel name, or user id to post message.
+          # See also: https://api.slack.com/methods/chat.postMessage#channels
+          # You can pass in multiple channels to post to by providing a comma-delimited list of channel IDs.
+          channel-id: ${{ secrets.SLACK_CHANNEL_IDS }}
+          # For posting a simple plain text message
+          slack-message: "Published New Release (${{env.TAG_NAME}}) Result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

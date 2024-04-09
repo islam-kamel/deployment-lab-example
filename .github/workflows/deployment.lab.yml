@@ -1,0 +1,96 @@
+# This is a GitHub Actions workflow for deploying a Docker image to Docker Hub when a new release is created.
+name: Deployment Lab
+
+# This workflow is triggered when a new release is created.
+on:
+  release:
+    types: [ created ]
+
+jobs:
+
+
+  push_to_registry:
+    # This job pushes a Docker image to Docker Hub.
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post to a Slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          # The following message update step does not accept a channel name.
+          # Setting a channel ID here for consistency is highly recommended.
+          channel-id: ${{ secrets.SLACK_CHANNEL_IDS }}
+          payload: |
+            {
+              "text": "Build, Push Image Started (In Progress)",
+              "attachments": [
+                {
+                  "pretext": "Build Image Started",
+                  "color": "dbab09",
+                  "fields": [
+                    {
+                      "title": "Status",
+                      "short": true,
+                      "value": "In Progress"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN}}
+
+      # This step checks out the repository code.
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      # This step logs into Docker Hub using the provided username and password.
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # This step extracts metadata (tags, labels) for the Docker image.
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{secrets.DOCKER_USERNAME}}/${{secrets.DOCKER_REGISTRY_NAME}}
+
+      # This step builds the Docker image and pushes it to Docker Hub.
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - uses: slackapi/slack-github-action@v1.24.0
+        with:
+          # Unlike the step posting a new message, this step does not accept a channel name.
+          # Please use a channel ID, not a name here.
+          channel-id: ${{ secrets.SLACK_CHANNEL_IDS }}
+          update-ts: ${{ steps.slack.outputs.ts }}
+          payload: |
+            {
+              "text": "Build, Push Image finished (Completed)",
+              "attachments": [
+                {
+                  "pretext": "Build Image finished",
+                  "color": "28a745",
+                  "fields": [
+                    {
+                      "title": "Status",
+                      "short": true,
+                      "value": "Completed"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN}}
